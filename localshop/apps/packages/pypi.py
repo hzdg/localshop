@@ -13,6 +13,8 @@ from localshop.apps.packages import forms
 from localshop.apps.packages import models
 
 
+EXTERNAL_MD5_FLAG = 'untrusted'
+
 logger = logging.getLogger(__name__)
 
 
@@ -121,6 +123,22 @@ def get_package_data(name, package=None):
             release_form.save()
 
         release_files = client.package_urls(package.name, release.version)
+        
+        # Some packages are hosted elsewhere, and PyPi can't provide release
+        # infos. Create a fake structure to get workable proxy feature. (MD5
+        # check can't be performed by task downloader)
+        url = data['download_url']
+        if not release_files and url:
+            filename = url.split('/')[-1]
+            release_files.append({
+                'filename': filename,
+                'url': url,
+                'python_version': 'source',
+                'packagetype': 'Source',
+                'size': 0,
+                'md5_digest': EXTERNAL_MD5_FLAG,
+            })
+
         for info in release_files:
             release_file = files.get(info['filename'])
             if not release_file:
@@ -136,4 +154,5 @@ def get_package_data(name, package=None):
 
     package.update_timestamp = now()
     package.save()
+    
     return package

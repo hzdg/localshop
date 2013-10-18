@@ -13,7 +13,7 @@ from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
 
 from localshop.apps.packages import models
-from localshop.apps.packages.pypi import get_package_data
+from localshop.apps.packages.pypi import get_package_data, EXTERNAL_MD5_FLAG
 from localshop.apps.packages.utils import md5_hash_file
 
 
@@ -53,7 +53,8 @@ def download_file(pk):
 
         # Validate the md5 hash of the downloaded file
         md5_hash = md5_hash_file(temp_file)
-        if md5_hash != release_file.md5_digest:
+        if release_file.md5_digest != EXTERNAL_MD5_FLAG and \
+                md5_hash != release_file.md5_digest:
             logging.error("MD5 hash mismatch: %s (expected: %s)" % (
                 md5_hash, release_file.md5_digest))
             return
